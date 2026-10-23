@@ -1,0 +1,16 @@
+# OWASP Juice Shop — Lab 1 target.
+# Image is MIT-licensed, intentionally vulnerable, maintained by the OWASP Juice Shop
+# project specifically for training (bkimminich/juice-shop on Docker Hub).
+#
+# One-time, online:   docker compose pull
+# Every time after:    docker compose up -d      (no internet needed)
+# Stop:                 docker compose down
+#
+# Bound to 127.0.0.1 only — not reachable from other machines on the network.
+services:
+  juice-shop:
+    image: bkimminich/juice-shop
+    container_name: redlab-juiceshop
+    ports:
+      - "127.0.0.1:3000:3000"
+    restart: unless-stopped
