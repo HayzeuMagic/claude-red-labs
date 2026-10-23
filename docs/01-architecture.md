@@ -50,6 +50,8 @@ auto-loading harness around it is not.
 | **Build a skill-aware agent** | Write code that (a) watches the conversation, (b) picks the right skill(s) automatically based on keywords, (c) optionally lets the model call real tools (a scanner, a shell) via function-calling. | **Partially, and explicitly scoped down** — `tools/skill_loader.py` does simple keyword→skill selection *ahead of time* (the instructor/student picks the skill file, the script just avoids hand-copying). It does **not** wire the model up to call tools automatically; see §4. |
 | **Fine-tune model weights** | Train/adjust the model's weights on skill content so the behavior is baked in permanently. | **No.** Unnecessary, slow, needs a GPU/dataset most student laptops don't have, and loses the ability to swap skills per-lab. Prompting a 7B instruct model with a well-written SKILL.md is a close enough substitute for this kit's purposes. |
 
+---
+
 ## 2. Recommended architecture
 
 ```
@@ -102,6 +104,8 @@ auto-loading harness around it is not.
 - The security boundary is simple to reason about and to teach: **the model never touches the
   target application directly.** It only ever talks to the student, in text, in a terminal.
 
+---
+
 ## 3. Hardware tiers (rule-of-thumb, not a vendor guarantee)
 
 Ollama's own listed download sizes (verified against `ollama.com/library`) scale roughly with
@@ -125,6 +129,8 @@ predicted here — it depends on CPU, RAM speed, and whether a GPU is used. Budg
 extra class session (or a take-home pull step, see installation guide) for the model download,
 and expect the 7B tier to answer in a few seconds to ~1 minute per response on a typical
 2020s laptop CPU.
+
+---
 
 ## 4. What works out of the box vs. what needs integration
 

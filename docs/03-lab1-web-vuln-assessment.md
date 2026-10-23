@@ -5,7 +5,7 @@
 `redlab-webtriage` (+ `offensive-fast-checking` / `offensive-reporting`)
 **Duration:** ~2–3 hours (one lab session, or two shorter sessions)
 
-## Learning objectives
+## Learning Objectives
 
 By the end of this lab, students will be able to:
 1. Explain what an Insecure Direct Object Reference (IDOR) / broken access control flaw is
@@ -22,11 +22,10 @@ By the end of this lab, students will be able to:
 
 - Completed `docs/02-offline-installation.md`.
 - `ollama list` shows `redlab-idor` and `redlab-webtriage`.
-- `docker compose up -d` run from the repo root; `http://127.0.0.1:3000` loads in a browser.
 - A way to send raw HTTP requests: `curl`, the browser's Network tab / dev tools, and/or
   OWASP ZAP as a proxy. No prior Juice Shop experience assumed.
 
-## The relevant Claude-Red skill(s)
+## The Relevant Claude-Red Skill(s)
 
 - `Skills/web/offensive-idor/SKILL.md` — IDOR / broken access control methodology
   (enumeration patterns, authorization-boundary testing, how to tell a true positive from a
@@ -35,96 +34,154 @@ By the end of this lab, students will be able to:
   `Skills/utility/offensive-reporting/SKILL.md` — a rapid-triage checklist and a reporting
   structure, loaded together into `redlab-webtriage` for the recon and write-up phases.
 
-## Environment setup (isolated, reproducible)
+> **Important:** this lab is confined to the Juice Shop container you start below. Do not
+> run any command, payload, or AI suggestion from this lab against any other host.
+
+---
+
+# Step 1: Start the Lab Environment
+
+### 1.1 Bring the target up
 
 ```bash
 docker compose up -d
-docker compose logs -f juice-shop   # wait for "server listening on port 3000"
+docker compose logs -f juice-shop
 ```
-Open `http://127.0.0.1:3000`. Create a throwaway account from the Juice Shop UI (any
-fictitious email/password — this is a local, disposable instance; do not reuse real
-credentials). This is the **only** target for this lab. Nothing else is in scope.
+Wait for the log line:
+```
+info: Server listening on port 3000
+```
+Then `Ctrl+C` to stop following logs (the container keeps running).
 
-Reset between attempts if needed: `docker compose down && docker compose up -d` (data does
-not persist across a `down`, giving every student/group a clean instance).
+### 1.2 Open it
 
-## Step-by-step procedure
+Go to `http://127.0.0.1:3000` in a browser. You should see the Juice Shop storefront.
 
-### Phase 1 — Baseline recon (15–20 min)
+### 1.3 Create a throwaway account
 
-1. Browse the app as a normal user: register, log in, view "your" basket, orders, and
-   profile/account pages. Note every URL that includes an ID, a username, or an order number
-   (e.g. `/rest/basket/<id>`, `/rest/user/whoami`, `/profile`).
-2. Open a terminal with `redlab-webtriage`:
-   ```bash
-   ollama run redlab-webtriage
-   ```
-3. Prompt:
-   ```
-   I'm doing an authorized assessment of a local OWASP Juice Shop instance
-   (http://127.0.0.1:3000) for a university lab. I've logged in as a normal user and
-   found these endpoints that reference an ID: [paste your list]. Using a fast-checking
-   methodology, what should I check first, and why?
-   ```
-4. Record the model's suggested priority order in your lab notebook (not yet verified —
-   these are hypotheses).
+Use the **Account** menu → **Login** → **Not yet a customer?** and register with any
+fictitious email/password. This is a disposable local instance — never reuse a real password
+here.
 
-### Phase 2 — AI-assisted hypothesis generation (30–40 min)
+> **Note:** to reset to a clean instance for a new attempt or a new group, run:
+> ```bash
+> docker compose down && docker compose up -d
+> ```
+> Juice Shop does not persist data across a `down`, so this always gives a fresh target.
 
-1. Switch to the IDOR-focused model:
-   ```bash
-   ollama run redlab-idor
-   ```
-2. For each candidate endpoint from Phase 1, ask something like:
-   ```
-   Endpoint: GET /rest/basket/6 (my basket ID, as a logged-in user, is 6).
-   What's the IDOR hypothesis here, what would I change to test it, and what response
-   would confirm vs. rule it out?
-   ```
-3. The model should give you: (a) what to change in the request, (b) what a *positive*
-   result looks like, (c) what a *negative* result looks like, (d) what else could explain a
-   positive-looking result that isn't actually the flaw (e.g. a shared/public resource by
-   design). Write all four down per endpoint — this is the "hypothesis," not a finding yet.
+---
 
-### Phase 3 — Verification (40–60 min)
+# Step 2: Baseline Recon (15–20 min)
 
-For every hypothesis from Phase 2, **reproduce it yourself** with a tool you control:
+### 2.1 Browse as a normal user
+
+Visit your basket, your orders, and your profile/account pages. Note every URL that includes
+an ID, a username, or an order number (e.g. `/rest/basket/<id>`, `/rest/user/whoami`,
+`/profile`). Write these down — you'll need them in Step 3.
+
+### 2.2 Ask the triage model to prioritize them
 
 ```bash
-# Example shape only — use the ID values your own session actually has.
+ollama run redlab-webtriage
+```
+**Prompt:**
+```
+I'm doing an authorized assessment of a local OWASP Juice Shop instance
+(http://127.0.0.1:3000) for a university lab. I've logged in as a normal user and
+found these endpoints that reference an ID: [paste your list]. Using a fast-checking
+methodology, what should I check first, and why?
+```
+
+### 2.3 Record the result
+
+Write the model's suggested priority order into your lab notebook (or
+`docs/worksheets/lab1-worksheet.md`). **This is a hypothesis, not a finding** — nothing has
+been verified yet.
+
+---
+
+# Step 3: AI-Assisted Hypothesis Generation (30–40 min)
+
+### 3.1 Switch to the IDOR-focused model
+
+```bash
+ollama run redlab-idor
+```
+
+### 3.2 Ask about each candidate endpoint
+
+**Prompt (repeat per endpoint):**
+```
+Endpoint: GET /rest/basket/6 (my basket ID, as a logged-in user, is 6).
+What's the IDOR hypothesis here, what would I change to test it, and what response
+would confirm vs. rule it out?
+```
+
+### 3.3 Record four things per endpoint
+
+1. What to change in the request.
+2. What a **positive** result looks like.
+3. What a **negative** result looks like.
+4. What else could explain a positive-looking result that isn't actually the flaw (e.g. a
+   resource that's legitimately public by design).
+
+---
+
+# Step 4: Verification (40–60 min)
+
+> **Important:** every hypothesis from Step 3 must be reproduced by **you**, with a tool you
+> control, before it counts as anything more than a guess.
+
+### 4.1 Reproduce each hypothesis
+
+```bash
 curl -s http://127.0.0.1:3000/rest/basket/5 -H "Authorization: Bearer <your token>"
 ```
-or drive the same request through the browser's Network tab / replay it in OWASP ZAP.
+or drive the same request through the browser's Network tab, or replay it in OWASP ZAP.
 
-- A hypothesis is **verified** only when you have the actual request and response in front
-  of you, and the response demonstrates access to data/functionality that should not be
-  reachable from your account.
-- A hypothesis is **refuted** when the server correctly denies it (403/404, or the resource
-  is legitimately public). Record refutations too — they show your process, not just your
-  hits.
-- If the model's suggested exact parameter name or path is wrong but the *idea* was sound
-  (e.g. "the basket ID is probably sequential and guessable" turned out right even though
-  the first ID it guessed wasn't yours), note that explicitly in your report. This is exactly
-  the hypothesis-vs-verified-finding distinction the rubric grades on.
+### 4.2 Classify the result
 
-### Phase 4 — Evidence collection and reporting (30 min)
+- **Verified** — you have the actual request and response in front of you, and the response
+  demonstrates access to data/functionality that should not be reachable from your account.
+- **Refuted** — the server correctly denied it (403/404), or the resource turned out to be
+  legitimately public. Record these too; they show your process, not just your hits.
 
-For each verified finding, capture:
+> **Note:** if the model's exact parameter name or path was wrong but the underlying idea was
+> sound (e.g. "the basket ID is probably sequential and guessable" turned out right even
+> though the first guessed ID wasn't yours), say so explicitly in your report. This is exactly
+> the hypothesis-vs-verified-finding distinction the rubric grades on.
+
+---
+
+# Step 5: Evidence Collection and Reporting (30 min)
+
+### 5.1 Capture evidence for each verified finding
+
 - The exact request (method, URL, headers, body) and response (status, body, relevant
-  headers) — screenshot or copy/paste text, not a description.
+  headers) — a screenshot or a copy/paste, not a description.
 - Which account/session made the request vs. whose data was exposed.
 - Steps to reproduce from a clean Juice Shop instance.
 
-Then prompt `redlab-webtriage`:
+### 5.2 Draft the report with the triage model
+
+```bash
+ollama run redlab-webtriage
+```
+**Prompt:**
 ```
 Using a standard reporting structure, help me turn this verified finding into a
 professional report section: [paste your evidence]. Keep it accurate to what I actually
 observed — don't add severity claims I haven't justified.
 ```
-Edit the model's draft — fix anything it overstates or gets wrong. You are the author; the
-model is a drafting aid.
 
-## Expected results
+### 5.3 Edit it
+
+You are the author; the model is a drafting aid. Fix anything it overstates, generalizes, or
+gets wrong before you submit it.
+
+---
+
+## Expected Results
 
 A default Juice Shop instance contains multiple broken-access-control / IDOR-style
 challenges (e.g. around baskets, feedback, and user data). Exact behavior can vary by Juice
@@ -136,11 +193,11 @@ outcome to report as a refuted hypothesis, not a failure of the exercise.
 | Symptom | Likely cause / fix |
 |---|---|
 | `http://127.0.0.1:3000` doesn't load | `docker compose ps` — is the container running? Check `docker compose logs juice-shop` for startup errors. |
-| `ollama run redlab-idor` says model not found | Re-run the `skill_loader.py` command from the installation guide; confirm with `ollama list`. |
+| `ollama run redlab-idor` says model not found | Re-run the matching `skill_loader.py` command from Step 5 of the installation guide; confirm with `ollama list`. |
 | Model responses are very slow | Expected on CPU-only 8–16 GB machines with the 7B+ tier; switch to the 1.5b/3b tier, or be patient — see hardware tiers in `01-architecture.md`. |
 | curl requests all return 401 | You need the session token/cookie from your logged-in browser session — copy it from dev tools (Application/Storage tab, or the `Authorization` header on an authenticated request in the Network tab). |
 
-## Student deliverables
+## Student Deliverables
 
 1. Lab notebook (or `docs/worksheets/lab1-worksheet.md`, filled in) with: endpoints examined,
    AI hypotheses, verification method and result for each.
@@ -148,7 +205,7 @@ outcome to report as a refuted hypothesis, not a failure of the exercise.
 3. A one-paragraph reflection: where did the AI's hypothesis help, where was it wrong or
    generic, and how did you tell the difference between a hypothesis and a verified finding?
 
-## Grading rubric (100 pts)
+## Grading Rubric (100 pts)
 
 | Criterion | Points |
 |---|---|

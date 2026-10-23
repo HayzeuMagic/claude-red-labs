@@ -1,47 +1,241 @@
 # Offline AI Cybersecurity Labs — Claude-Red + Ollama
 
-An instructor's kit for running two hands-on, offline AI-assisted security labs with
-undergraduate cybersecurity / intro-pentesting students, using a **free, locally
-running LLM** instead of a paid Claude subscription or any cloud API.
+A ready-to-run instructor's kit for two hands-on, fully offline, AI-assisted security labs,
+built for undergraduate cybersecurity / intro-pentesting students who do not have a paid
+Claude account. The AI model runs locally through [Ollama](https://ollama.com), primed with
+real [Claude-Red](https://github.com/SnailSploit/claude-red) skill files as plain prompt
+content — no subscription, no API key, no cloud inference anywhere in the stack.
 
-- **Lab 1** — AI-assisted web vulnerability assessment against OWASP Juice Shop.
-- **Lab 2** — AI-assisted vulnerability analysis and remediation of a small, intentionally
-  vulnerable Python/Flask application, with a regression test.
+## Lab Resources
 
-Everything here — model, interface, lab targets, skill content — runs on the student's
-machine with no internet connection required once setup is complete.
+| Resource | What it's for | Where |
+|---|---|---|
+| This repository | Lab manuals, worksheets, rubrics, scripts, and the Lab 2 target app | you're in it |
+| Claude-Red | The skill library (`SKILL.md` methodology files) that becomes the AI's system prompt | https://github.com/SnailSploit/claude-red |
+| Ollama | The local model runtime | https://ollama.com |
+| OWASP Juice Shop | The Lab 1 target application (Docker image) | `bkimminich/juice-shop` on Docker Hub |
+| OWASP ZAP (optional) | Free proxy/scanner for sending and inspecting requests | https://www.zaproxy.org/download/ |
 
-## Start here
-
-1. Read [`docs/01-architecture.md`](docs/01-architecture.md) — what we're building and why.
-2. Follow [`docs/02-offline-installation.md`](docs/02-offline-installation.md) — one-time setup
-   (do this step with internet access; everything after is offline).
-3. Run [`docs/03-lab1-web-vuln-assessment.md`](docs/03-lab1-web-vuln-assessment.md).
-4. Run [`docs/04-lab2-vuln-remediation.md`](docs/04-lab2-vuln-remediation.md).
-5. Optional comparison exercise: [`docs/05-comparison-exercise.md`](docs/05-comparison-exercise.md).
-6. Before class, run through [`docs/06-offline-readiness-checklist.md`](docs/06-offline-readiness-checklist.md).
-
-## What's in this repo
+## What's Inside This Repo
 
 ```
-docs/                          instructor guide, lab manuals, worksheets, rubrics
-tools/skill_loader.py           turns a Claude-Red SKILL.md into a local Ollama model
-tools/Modelfile.template        template used by skill_loader.py
-docker-compose.yml               OWASP Juice Shop target for Lab 1
-lab2/vuln_app/                  intentionally vulnerable Flask app for Lab 2 (SQLi)
-lab2/tests/                      pytest regression test for the Lab 2 fix
+docs/01-architecture.md                 why this design, hardware tiers, what's in/out of scope
+docs/02-offline-installation.md         Step 1-9: one-time setup, done once per machine
+docs/03-lab1-web-vuln-assessment.md     Lab 1 manual: Juice Shop + IDOR
+docs/04-lab2-vuln-remediation.md        Lab 2 manual: SQL injection + fix + regression test
+docs/05-comparison-exercise.md          optional: AI with skill vs. without skill
+docs/06-offline-readiness-checklist.md  run this with the network OFF before lab day
+docs/worksheets/                        student fill-in sheets for both labs
+docs/rubrics/                           pointer to the grading tables (inline in each manual)
+tools/skill_loader.py                   turns a Claude-Red SKILL.md into a local Ollama model
+tools/Modelfile.template                reference Modelfile, shown for transparency
+docker-compose.yml                       launches OWASP Juice Shop for Lab 1
+lab2/vuln_app/app.py                    intentionally vulnerable Flask app (SQLi) for Lab 2
+lab2/vuln_app/app_fixed.py              the fixed version, for comparison
+lab2/tests/test_security_regression.py pytest proof that the fix closes the bug
 ```
 
-## Scope and safety
+## Before You Start
 
-- All testing in these labs is confined to applications the instructor deploys **inside the
-  lab environment** (a local Juice Shop container, a local Flask app). Students must not point
-  any tool, payload, or AI-suggested technique at a system they do not own or have not been
-  explicitly authorized to test.
-- The local model is an **advisor**, not an autonomous operator. No agent in this kit executes
-  attacks on its own; students read the model's suggestions, understand them, and run the actual
-  commands themselves through tools they control (curl, a browser, OWASP ZAP). See
-  `docs/01-architecture.md` for why, and what *would* be required to change that.
+> **Note:** Steps 1–6 below need internet access once, to download software and models.
+> Everything after Step 6 is designed to run with the network **disconnected** — Step 9
+> and `docs/06-offline-readiness-checklist.md` exist specifically to prove that.
+
+> **Important:** every target in these labs is a disposable, local-only application
+> (`127.0.0.1`). Nothing here is to be pointed at a system you do not own or have not been
+> explicitly authorized to test. See **Scope and Safety** at the bottom of this file.
+
+Minimum hardware: 8 GB RAM (CPU-only, slower, uses a smaller model tier). Recommended: 16 GB
+RAM. Full tier breakdown is in `docs/01-architecture.md`.
+
+---
+
+# Step 1: Install Git, Python, and Docker
+
+- **Git** — https://git-scm.com/downloads. Verify with:
+  ```bash
+  git --version
+  ```
+- **Python 3.9+** — https://www.python.org/downloads/. Verify with:
+  ```bash
+  python --version
+  ```
+- **Docker Desktop** (Windows/macOS) or Docker Engine (Linux) — https://www.docker.com/products/docker-desktop/.
+  Verify with:
+  ```bash
+  docker --version
+  ```
+
+---
+
+# Step 2: Install Ollama
+
+**Windows**, in PowerShell:
+```powershell
+irm https://ollama.com/install.ps1 | iex
+```
+or download `OllamaSetup.exe` from https://ollama.com/download and run it.
+
+**macOS / Linux:**
+```bash
+curl -fsSL https://ollama.com/install.sh | sh
+```
+
+Verify:
+```bash
+ollama --version
+```
+
+> **Note:** no Ollama account is needed for anything in this kit. Accounts only matter for
+> Ollama's optional `:cloud` models, which these labs never use.
+
+---
+
+# Step 3: Pull a Local Model
+
+Pick the tier that matches your RAM (full table in `docs/01-architecture.md`):
+
+| RAM | Command |
+|---|---|
+| 8 GB | `ollama pull qwen2.5-coder:1.5b` |
+| 16 GB (recommended) | `ollama pull qwen2.5-coder:7b` |
+| 32 GB+ / GPU ≥10 GB VRAM | `ollama pull qwen2.5-coder:14b` |
+
+This is the only large download in the whole setup (~4.7 GB for the 7B tier). Once it
+finishes, the model lives on local disk — `ollama run qwen2.5-coder:7b` works with the
+network off.
+
+---
+
+# Step 4: Clone Claude-Red and This Kit
+
+```bash
+git clone https://github.com/SnailSploit/claude-red claude-red-skills
+```
+
+This is a folder of Markdown `SKILL.md` files once cloned — nothing in it executes, and
+nothing in it calls any API. We read it as plain text.
+
+If you're not already inside this kit's repository:
+```bash
+git clone https://github.com/HayzeuMagic/claude-red-labs.git
+cd claude-red-labs
+```
+
+Your two clones should sit next to each other, e.g.:
+```
+C:\labs\claude-red-skills\     <- Step 4's first clone
+C:\labs\claude-red-labs\       <- this kit (you are here)
+```
+
+---
+
+# Step 5: Build the Skill-Loaded Models
+
+From inside `claude-red-labs`:
+
+```bash
+python tools/skill_loader.py --skill ../claude-red-skills/Skills/web/offensive-idor/SKILL.md --name redlab-idor --base qwen2.5-coder:7b
+
+python tools/skill_loader.py --skill ../claude-red-skills/Skills/web/offensive-sqli/SKILL.md --name redlab-sqli --base qwen2.5-coder:7b
+
+python tools/skill_loader.py --skill ../claude-red-skills/Skills/utility/offensive-fast-checking/SKILL.md --skill ../claude-red-skills/Skills/utility/offensive-reporting/SKILL.md --name redlab-webtriage --base qwen2.5-coder:7b
+
+python tools/skill_loader.py --baseline --name redlab-baseline --base qwen2.5-coder:7b
+```
+
+Each line prints `Wrote Modelfile ...` and then runs `ollama create`, which is local and
+offline — it repackages the already-pulled base model with a new system prompt, no new
+download happens.
+
+**Check:**
+```bash
+ollama list
+```
+You should see `redlab-idor`, `redlab-sqli`, `redlab-webtriage`, `redlab-baseline`, and your
+base model tag.
+
+> **Note:** `--base` must match whatever tag you pulled in Step 3. If you pulled the 1.5B
+> tier, pass `--base qwen2.5-coder:1.5b` on every line above instead.
+
+---
+
+# Step 6: Pull the Lab 1 Target Image
+
+From the `claude-red-labs` root (where `docker-compose.yml` lives):
+```bash
+docker compose pull
+```
+
+This is the last step that needs the internet. Everything from here on works offline.
+
+---
+
+# Step 7: Set Up the Lab 2 App
+
+```bash
+cd lab2/vuln_app
+python -m venv .venv
+```
+Activate it:
+- **Windows:** `.venv\Scripts\activate`
+- **macOS/Linux:** `source .venv/bin/activate`
+
+```bash
+pip install -r requirements.txt
+pip install pytest
+cd ../..
+```
+
+---
+
+# Step 8: (Optional) Install OWASP ZAP
+
+Download the installer for your OS from https://www.zaproxy.org/download/ and run it once,
+online. ZAP works fully offline afterward — only its add-on marketplace needs internet, and
+neither lab requires an add-on. Burp Suite Community Edition is an equally valid free
+substitute if your lab room already standardizes on it.
+
+---
+
+# Step 9: Verify Everything Works Offline
+
+**Disconnect the network** and run through `docs/06-offline-readiness-checklist.md` in full.
+This is not optional for a lab you intend to run without internet in the room — catch a step
+that silently needed the network now, not mid-class.
+
+---
+
+# Running the Labs
+
+| Lab | Manual | Target |
+|---|---|---|
+| Lab 1 — Web vulnerability assessment | [`docs/03-lab1-web-vuln-assessment.md`](docs/03-lab1-web-vuln-assessment.md) | OWASP Juice Shop (`127.0.0.1:3000`) |
+| Lab 2 — Vulnerability analysis & remediation | [`docs/04-lab2-vuln-remediation.md`](docs/04-lab2-vuln-remediation.md) | `lab2/vuln_app/app.py` (`127.0.0.1:5000`) |
+
+Each manual is self-contained: learning objectives, prerequisites, the exact Claude-Red
+skill used, copy-paste student prompts, a step-by-step procedure, troubleshooting, student
+deliverables, and a grading rubric.
+
+Optional, run after either lab: [`docs/05-comparison-exercise.md`](docs/05-comparison-exercise.md)
+— the same question asked of the skill-loaded model vs. a bare baseline model, so students
+see concretely what the skill content changes.
+
+For the reasoning behind this design (why prompt-loading and not fine-tuning, what would be
+needed for the AI to run tools itself, hardware tiers) see
+[`docs/01-architecture.md`](docs/01-architecture.md).
+
+---
+
+## Scope and Safety
+
+- Every target in these labs is deployed **by the instructor, inside the lab environment**
+  (a local Juice Shop container, a local Flask app). Students must not point any tool,
+  payload, or AI-suggested technique at a system they do not own or have not been explicitly
+  authorized to test.
+- The local model is an **advisor, not an operator**. Nothing in this kit lets the model
+  execute a command, send a request, or touch the target on its own — it only ever talks to
+  the student, in text. The student decides what to run, and runs it themselves.
 - This kit reuses the public [Claude-Red](https://github.com/SnailSploit/claude-red) skill
-  library (MIT-licensed `SKILL.md` methodology files) purely as **prompt content** — no
-  Claude-Red code runs, no Claude subscription or API is used anywhere in this kit.
+  library (MIT-licensed `SKILL.md` files) purely as **prompt text**. No Claude-Red code
+  executes, and no part of this kit uses a Claude subscription or API.
