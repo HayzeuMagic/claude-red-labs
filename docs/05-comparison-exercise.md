@@ -7,9 +7,10 @@ checkable* the answer is, not whether the model is infallible.
 ## Setup
 
 You already built `redlab-baseline` in the installation guide (same base model, only the
-generic safety banner, no skill content):
-```bash
-python tools/skill_loader.py --baseline --name redlab-baseline --base qwen2.5-coder:7b
+generic safety banner, no skill content). If not, **RUN IN:** Windows PowerShell — Normal
+User, from the `claude-red-labs` root:
+```powershell
+python tools\skill_loader.py --baseline --name redlab-baseline --base qwen2.5-coder:7b
 ```
 
 ## Procedure

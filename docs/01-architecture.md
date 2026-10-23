@@ -108,10 +108,15 @@ auto-loading harness around it is not.
 
 ## 3. Hardware & system requirements (Windows deployment)
 
-The deployment PCs run Windows, with **no Hyper-V installed or enabled**, and run Ollama
-directly on Windows — not inside a Hyper-V virtual machine. This section documents what that
-actually requires, and is explicit about which numbers are verified vs. not published
-anywhere by Ollama (and therefore not invented here).
+The **target deployment PCs** run Windows, with **no Hyper-V installed or enabled**, and run
+Ollama directly on Windows — not inside a Hyper-V virtual machine. This section documents
+what that actually requires, and is explicit about which numbers are verified vs. not
+published anywhere by Ollama (and therefore not invented here).
+
+A separate **development PC** (used to build and test this kit) does have Hyper-V installed
+and in use. Where that PC's own behavior is cited below as evidence, it's labeled as such —
+it is one specific, already-observed data point, not a claim about every Windows PC, and not
+a claim about the target deployment PCs this kit is actually for.
 
 ### Virtualization — not required for Ollama
 
@@ -131,6 +136,21 @@ passthrough through Docker for Ollama itself.
 > on these PCs (Settings → General, in Docker Desktop) independently of this Ollama setup. Do
 > not attribute an Ollama port/startup problem to Docker's backend, or vice versa — they are
 > two different processes with two different sets of dependencies.
+
+> **What was actually observed on the Hyper-V development PC, and what that does and doesn't
+> prove:** Ollama's server failed to bind its default port (11434) there, with the errors
+> `Error: timed out waiting for server to start` and the WSAEACCES bind-permission error.
+> Direct diagnosis (`netsh interface ipv4 show excludedportrange protocol=tcp`) found 11434
+> itself inside a Windows-level excluded port range on that PC, and confirmed `hns` and
+> `vmms` (Hyper-V's networking/VM-management services) were running there. **That is a
+> correlation observed on one machine, not a proof that Hyper-V caused the exclusion** — the
+> conclusive test (disable Hyper-V, re-check the exclusion) was not performed. Switching
+> Ollama to a confirmed-free alternate port resolved it on that PC; full evidence, exact
+> commands, and the verified fix are in
+> [`07-ollama-windows-troubleshooting.md`](07-ollama-windows-troubleshooting.md). **Target
+> deployment PCs don't have Hyper-V, so this specific correlation cannot apply to them** — if
+> one of them ever excludes 11434, the cause is necessarily something else, and the same
+> troubleshooting doc's Steps 1–6 find it without assuming Hyper-V.
 
 ### CPU — not formally specified by Ollama
 
@@ -170,7 +190,7 @@ Llama 3.1 8B is a fine drop-in alternative if Qwen is unavailable on a given mir
   rather than assume a number here.
 - **This repo + Claude-Red clone** — tens of MB, negligible.
 - **Lab 1's Juice Shop image** — size not verified in this document; run `docker images` after
-  `docker compose pull` (installation guide, Step 6) to see the actual figure on a target PC.
+  `docker compose pull` (installation guide, Step 7) to see the actual figure on a target PC.
 
 ### GPU — optional
 

@@ -22,8 +22,9 @@ By the end of this lab, students will be able to:
 
 - Completed `docs/02-offline-installation.md`.
 - `ollama list` shows `redlab-idor` and `redlab-webtriage`.
-- A way to send raw HTTP requests: `curl`, the browser's Network tab / dev tools, and/or
-  OWASP ZAP as a proxy. No prior Juice Shop experience assumed.
+- A way to send raw HTTP requests: `curl.exe` (in PowerShell, call it as `curl.exe`, not bare
+  `curl` — see Step 4.1), the browser's Network tab / dev tools, and/or OWASP ZAP as a proxy.
+  No prior Juice Shop experience assumed.
 
 ## The Relevant Claude-Red Skill(s)
 
@@ -43,7 +44,10 @@ By the end of this lab, students will be able to:
 
 ### 1.1 Bring the target up
 
-```bash
+**RUN IN:** Windows PowerShell — Normal User
+**Directory:** `claude-red-labs` root
+
+```powershell
 docker compose up -d
 docker compose logs -f juice-shop
 ```
@@ -63,9 +67,11 @@ Use the **Account** menu → **Login** → **Not yet a customer?** and register 
 fictitious email/password. This is a disposable local instance — never reuse a real password
 here.
 
-> **Note:** to reset to a clean instance for a new attempt or a new group, run:
-> ```bash
-> docker compose down && docker compose up -d
+> **Note:** to reset to a clean instance for a new attempt or a new group, run (as two
+> separate commands — Windows PowerShell 5.1 doesn't support `&&` chaining the way Bash does):
+> ```powershell
+> docker compose down
+> docker compose up -d
 > ```
 > Juice Shop does not persist data across a `down`, so this always gives a fresh target.
 
@@ -81,7 +87,9 @@ an ID, a username, or an order number (e.g. `/rest/basket/<id>`, `/rest/user/who
 
 ### 2.2 Ask the triage model to prioritize them
 
-```bash
+**RUN IN:** Windows PowerShell — Normal User
+
+```powershell
 ollama run redlab-webtriage
 ```
 **Prompt:**
@@ -104,7 +112,9 @@ been verified yet.
 
 ### 3.1 Switch to the IDOR-focused model
 
-```bash
+**RUN IN:** Windows PowerShell — Normal User
+
+```powershell
 ollama run redlab-idor
 ```
 
@@ -134,8 +144,16 @@ would confirm vs. rule it out?
 
 ### 4.1 Reproduce each hypothesis
 
-```bash
-curl -s http://127.0.0.1:3000/rest/basket/5 -H "Authorization: Bearer <your token>"
+**RUN IN:** Windows PowerShell — Normal User. Use `curl.exe` explicitly, not bare `curl` —
+in PowerShell, plain `curl` is an alias for `Invoke-WebRequest`, and `-H` does not mean
+"header" there (it errors trying to bind `-Headers`). Calling `curl.exe` directly bypasses
+the alias and gets the real curl syntax below.
+```powershell
+curl.exe -s http://127.0.0.1:3000/rest/basket/5 -H "Authorization: Bearer <your token>"
+```
+or, using PowerShell's own native equivalent instead:
+```powershell
+Invoke-RestMethod http://127.0.0.1:3000/rest/basket/5 -Headers @{ Authorization = "Bearer <your token>" }
 ```
 or drive the same request through the browser's Network tab, or replay it in OWASP ZAP.
 
@@ -164,7 +182,9 @@ or drive the same request through the browser's Network tab, or replay it in OWA
 
 ### 5.2 Draft the report with the triage model
 
-```bash
+**RUN IN:** Windows PowerShell — Normal User
+
+```powershell
 ollama run redlab-webtriage
 ```
 **Prompt:**

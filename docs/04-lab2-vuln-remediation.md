@@ -21,10 +21,11 @@ By the end of this lab, students will be able to:
 - Completed `docs/02-offline-installation.md`, including the Lab 2 virtual environment
   (`lab2/vuln_app/.venv`) with `flask` and `pytest` installed.
 - `redlab-sqli` built (see Step 5 of the installation guide, or build it now):
-  ```bash
-  python tools/skill_loader.py \
-    --skill ../claude-red-skills/Skills/web/offensive-sqli/SKILL.md \
-    --name redlab-sqli --base qwen2.5-coder:7b
+
+  **RUN IN:** Windows PowerShell — Normal User
+  **Directory:** `claude-red-labs` root
+  ```powershell
+  python tools\skill_loader.py --skill ..\claude-red-skills\Skills\web\offensive-sqli\SKILL.md --name redlab-sqli --base qwen2.5-coder:7b
   ```
 
 ## The Relevant Claude-Red Skill
@@ -43,7 +44,9 @@ Open `lab2/vuln_app/app.py` and read the `/user` route.
 
 ### 1.2 Ask the model
 
-```bash
+**RUN IN:** Windows PowerShell — Normal User
+
+```powershell
 ollama run redlab-sqli
 ```
 **Prompt:**
@@ -66,24 +69,38 @@ haven't run anything against the app yet.
 
 ### 2.1 Start the vulnerable app
 
-```bash
-cd lab2/vuln_app
-.venv\Scripts\activate       # or: source .venv/bin/activate
-python app.py                 # binds to 127.0.0.1:5000 ONLY
+**RUN IN:** Windows PowerShell — Normal User
+**Directory:** `claude-red-labs` root
+
+```powershell
+cd lab2\vuln_app
+.venv\Scripts\Activate.ps1
+python app.py
 ```
+(Activation syntax differs by shell — **Command Prompt (CMD):** `.venv\Scripts\activate.bat`;
+**macOS/Linux:** `source .venv/bin/activate`. See `02-offline-installation.md` Step 8.2 if
+activation doesn't visibly change your prompt.) `app.py` binds to `127.0.0.1:5000` only.
 
 ### 2.2 Send a baseline request
 
-In a second terminal:
-```bash
-curl "http://127.0.0.1:5000/user?username=alice"
+**RUN IN:** Windows PowerShell — Normal User, a **second** terminal (leave `app.py` running
+in the first)
+
+```powershell
+curl.exe "http://127.0.0.1:5000/user?username=alice"
 ```
+(Use `curl.exe`, not bare `curl` — in PowerShell, plain `curl` is an alias for
+`Invoke-WebRequest`, which renders the response differently than real curl. `curl.exe`
+bypasses the alias. In Command Prompt, plain `curl` is already the real binary.)
+
 Expected: a single JSON object for `alice`.
 
 ### 2.3 Send the injection attempt
 
-```bash
-curl "http://127.0.0.1:5000/user?username=' OR '1'='1"
+**RUN IN:** Windows PowerShell — Normal User, same second terminal
+
+```powershell
+curl.exe "http://127.0.0.1:5000/user?username=' OR '1'='1"
 ```
 Expected, if the model's hypothesis is correct: **every** user, including `admin` — more
 data than a lookup for one named user should ever return. No data is modified or deleted;
@@ -123,9 +140,12 @@ correct approach if it doesn't already.
 
 ### 4.1 Run the included test suite
 
-```bash
-cd ../..        # repo root
-pytest lab2/tests/test_security_regression.py -v
+**RUN IN:** Windows PowerShell — Normal User
+**Directory:** `claude-red-labs` root
+
+```powershell
+cd ..\..
+pytest lab2\tests\test_security_regression.py -v
 ```
 Expected: `5 passed`.
 
@@ -144,8 +164,11 @@ proves you understand the fix**, not just that you can run an existing test file
 
 ### 4.4 Re-run and confirm
 
-```bash
-pytest lab2/tests/test_security_regression.py -v
+**RUN IN:** Windows PowerShell — Normal User
+**Directory:** `claude-red-labs` root
+
+```powershell
+pytest lab2\tests\test_security_regression.py -v
 ```
 Expected: `6 passed`, including your new test.
 
@@ -164,9 +187,9 @@ Expected: `6 passed`, including your new test.
 
 | Symptom | Likely cause / fix |
 |---|---|
-| `ModuleNotFoundError: flask` | Activate the venv (`.venv\Scripts\activate`) before running `python app.py` or `pytest`. |
+| `ModuleNotFoundError: flask` | Activate the venv first — `.venv\Scripts\Activate.ps1` in PowerShell, `.venv\Scripts\activate.bat` in CMD (not the extension-less `.venv\Scripts\activate`, which does nothing in PowerShell) — before running `python app.py` or `pytest`. |
 | Port 5000 already in use | Something else is bound to it (common on macOS with AirPlay Receiver) — either stop that service or change the port argument in `app.run(...)`. |
-| `pytest` can't find the test file | Run it from the repo root, with the path exactly as shown (`lab2/tests/test_security_regression.py`). |
+| `pytest` can't find the test file | Run it from the repo root, with the path exactly as shown: PowerShell/CMD use `lab2\tests\test_security_regression.py`, Bash uses `lab2/tests/test_security_regression.py`. |
 | Your added test passes against `app.py` too (i.e. doesn't demonstrate the bug) | Your payload probably isn't actually changing the query logic — check that it includes an unterminated quote plus a tautology (`' OR '1'='1`) or a comment terminator (`' --`), not just a weird-looking string. |
 
 ## Student Deliverables
