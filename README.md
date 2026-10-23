@@ -25,6 +25,7 @@ docs/03-lab1-web-vuln-assessment.md     Lab 1 manual: Juice Shop + IDOR
 docs/04-lab2-vuln-remediation.md        Lab 2 manual: SQL injection + fix + regression test
 docs/05-comparison-exercise.md          optional: AI with skill vs. without skill
 docs/06-offline-readiness-checklist.md  run this with the network OFF before lab day
+docs/07-ollama-windows-troubleshooting.md  Ollama won't start / port 11434 issues on Windows
 docs/worksheets/                        student fill-in sheets for both labs
 docs/rubrics/                           pointer to the grading tables (inline in each manual)
 tools/skill_loader.py                   turns a Claude-Red SKILL.md into a local Ollama model
@@ -46,7 +47,12 @@ lab2/tests/test_security_regression.py pytest proof that the fix closes the bug
 > explicitly authorized to test. See **Scope and Safety** at the bottom of this file.
 
 Minimum hardware: 8 GB RAM (CPU-only, slower, uses a smaller model tier). Recommended: 16 GB
-RAM. Full tier breakdown is in `docs/01-architecture.md`.
+RAM. Full tier breakdown, plus CPU/storage/virtualization notes, is in `docs/01-architecture.md` §3.
+
+> **Note:** these PCs do not have Hyper-V installed or enabled. Ollama runs directly on
+> Windows, not inside a VM, and nothing in this setup needs Hyper-V. If Ollama fails to start
+> on port 11434, see [`docs/07-ollama-windows-troubleshooting.md`](docs/07-ollama-windows-troubleshooting.md)
+> — the cause is never Hyper-V on these machines, since it isn't installed.
 
 ---
 
@@ -86,8 +92,23 @@ Verify:
 ollama --version
 ```
 
+Then confirm the server itself is up and answering, not just that the CLI installed:
+```powershell
+Get-Process ollama -ErrorAction SilentlyContinue
+Invoke-RestMethod http://127.0.0.1:11434/api/tags
+```
+
 > **Note:** no Ollama account is needed for anything in this kit. Accounts only matter for
 > Ollama's optional `:cloud` models, which these labs never use.
+
+> **Note:** if either command above fails — including the errors `timed out waiting for
+> server to start` or a `bind: An attempt was made to access a socket in a way forbidden by
+> its access permissions` — go to
+> [`docs/07-ollama-windows-troubleshooting.md`](docs/07-ollama-windows-troubleshooting.md).
+> Full step-by-step diagnosis is there; the short version is: check for an already-running
+> Ollama process, check if port 11434 is already in use or excluded by Windows, and only fall
+> back to a different port (via `OLLAMA_HOST`) once you've confirmed the default one is
+> genuinely unavailable — don't make a non-default port the default for every PC.
 
 ---
 

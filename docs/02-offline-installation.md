@@ -57,7 +57,7 @@ Both commands download and run Ollama's own installer. If your network blocks pi
 script directly, download `OllamaSetup.exe` manually from https://ollama.com/download and
 run it instead — same result.
 
-### 2.2 Verify
+### 2.2 Verify the CLI installed
 
 ```bash
 ollama --version
@@ -67,6 +67,31 @@ Expected output: `ollama version 0.x.x`.
 > **Note:** Ollama does not ask you to sign in or create an account to run a local model.
 > You'll only see an account prompt if you try to use one of Ollama's `:cloud` model tags —
 > this kit never does that.
+
+> **Note:** these target PCs do not have Hyper-V installed or enabled, and don't need it.
+> Ollama runs as a native Windows background process, not inside a VM — nothing in this step
+> or the ones that follow assumes or depends on Hyper-V. See `01-architecture.md` §3 for the
+> full virtualization note.
+
+### 2.3 Confirm the server is running
+
+```powershell
+Get-Process ollama -ErrorAction SilentlyContinue
+```
+Expected: a process is listed. The installer starts the Ollama background server
+automatically; you normally don't need to run `ollama serve` yourself.
+
+### 2.4 Verify the local API answers
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:11434/api/tags
+```
+Expected: a JSON response (a `models` list — empty until Step 3 pulls one). If 2.3 or 2.4
+doesn't come back clean — including the error `Error: timed out waiting for server to start`
+or `listen tcp 127.0.0.1:11434: bind: An attempt was made to access a socket in a way
+forbidden by its access permissions` — stop here and work through
+[`07-ollama-windows-troubleshooting.md`](07-ollama-windows-troubleshooting.md) before
+continuing to Step 3.
 
 ---
 

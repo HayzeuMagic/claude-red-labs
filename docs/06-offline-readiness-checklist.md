@@ -5,6 +5,9 @@ Run this **after** completing `02-offline-installation.md`, with the network dis
 before class.
 
 - [ ] `ollama --version` runs (Ollama itself doesn't need network to start).
+- [ ] `Invoke-RestMethod http://127.0.0.1:11434/api/tags` returns a JSON model list (confirms
+      the server is actually listening, not just that the CLI is installed). If this fails,
+      see `07-ollama-windows-troubleshooting.md` — it's unrelated to being offline.
 - [ ] `ollama list` shows your base model tag plus `redlab-idor`, `redlab-sqli`,
       `redlab-webtriage`, `redlab-baseline`.
 - [ ] `ollama run redlab-idor` starts a chat and responds to a test question

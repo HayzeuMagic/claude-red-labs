@@ -106,7 +106,42 @@ auto-loading harness around it is not.
 
 ---
 
-## 3. Hardware tiers (rule-of-thumb, not a vendor guarantee)
+## 3. Hardware & system requirements (Windows deployment)
+
+The deployment PCs run Windows, with **no Hyper-V installed or enabled**, and run Ollama
+directly on Windows — not inside a Hyper-V virtual machine. This section documents what that
+actually requires, and is explicit about which numbers are verified vs. not published
+anywhere by Ollama (and therefore not invented here).
+
+### Virtualization — not required for Ollama
+
+Ollama ships as a native Windows application/background service; it is not a VM and does not
+depend on one. Checked against Ollama's own FAQ and Windows download page (docs.ollama.com,
+ollama.com/download/windows): neither lists Hyper-V, a virtual switch, or any VM as a
+requirement to install or run Ollama. The only place Windows virtualization shows up in
+Ollama's own docs is unrelated to this deployment: WSL2 is mentioned solely (a) as the path
+for Docker GPU passthrough, and (b) in a Windows 10 networking-slowdown workaround for the
+`vEthernet (WSL)` adapter — neither applies here, since this deployment doesn't use GPU
+passthrough through Docker for Ollama itself.
+
+> **Note:** Docker Desktop — used only for Lab 1's Juice Shop container, not for Ollama — has
+> its *own* backend requirement (WSL2 or Hyper-V, depending on how it's configured) that is
+> separate from anything Ollama needs. This is flagged as a distinct, **unconfirmed item** for
+> whoever deploys Lab 1 specifically: check which backend Docker Desktop is configured to use
+> on these PCs (Settings → General, in Docker Desktop) independently of this Ollama setup. Do
+> not attribute an Ollama port/startup problem to Docker's backend, or vice versa — they are
+> two different processes with two different sets of dependencies.
+
+### CPU — not formally specified by Ollama
+
+Ollama does not publish a minimum CPU spec. Any modern 64-bit (x86-64) CPU runs it. The
+broader llama.cpp/Ollama community commonly observes meaningfully faster CPU-only token
+generation on CPUs with AVX2 support, but this is **community guidance, not an Ollama-stated
+minimum** — flagged here rather than presented as a hard requirement. If a specific target PC
+model's CPU needs confirming, check it against this flag before relying on the hardware tiers
+below for a go/no-go decision.
+
+### RAM — verified against published model download sizes
 
 Ollama's own listed download sizes (verified against `ollama.com/library`) scale roughly with
 RAM needed to run a model comfortably on CPU (model size + a few GB of headroom for context
@@ -123,6 +158,25 @@ Qwen2.5-Coder is recommended as the default because both labs involve reading/wr
 (Lab 2 especially) as well as web-request reasoning (Lab 1), and it's one of the strongest
 openly-downloadable code-capable models in the size range most student laptops can run.
 Llama 3.1 8B is a fine drop-in alternative if Qwen is unavailable on a given mirror.
+
+### Storage
+
+- **Model files** — sizes verified in the table above. Ollama stores them at
+  `C:\Users\<username>\.ollama\models` on Windows (confirmed in Ollama's FAQ); change this
+  with the `OLLAMA_MODELS` environment variable if a PC's user profile is on a small drive.
+- **The Ollama install itself** — Ollama does not publish an install footprint figure.
+  Unconfirmed; after installing on a representative PC, check actual usage (e.g.
+  `Get-ChildItem -Recurse "$env:LOCALAPPDATA\Programs\Ollama" | Measure-Object -Property Length -Sum`)
+  rather than assume a number here.
+- **This repo + Claude-Red clone** — tens of MB, negligible.
+- **Lab 1's Juice Shop image** — size not verified in this document; run `docker images` after
+  `docker compose pull` (installation guide, Step 6) to see the actual figure on a target PC.
+
+### GPU — optional
+
+A GPU is not required. Every tier above runs CPU-only; a GPU with enough VRAM to hold the
+model just makes responses faster. Not relevant to the Hyper-V question in this section —
+GPU acceleration for Ollama on Windows does not require Hyper-V either.
 
 **Assumption, labeled as such:** exact tokens/sec on any given student laptop cannot be
 predicted here — it depends on CPU, RAM speed, and whether a GPU is used. Budget at least one
