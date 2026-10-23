@@ -11,6 +11,13 @@ same step number in [`docs/02-offline-installation.md`](docs/02-offline-installa
 which has the full detail (exact terminal, exact directory, expected output,
 troubleshooting) — follow this README for the overview, that doc when you need the detail.
 
+> **In a hurry? Two shorter docs cover the two most common situations:**
+> [`docs/08-fresh-pc-setup.md`](docs/08-fresh-pc-setup.md) is a condensed, copy-paste checklist
+> for a machine that has **nothing installed yet** (same steps as this README, just the
+> commands without the surrounding explanation). [`docs/09-quickstart-already-built.md`](docs/09-quickstart-already-built.md)
+> is for a machine that's **already been through setup once** — just starting/stopping the
+> two labs for a class session, no reinstalling anything.
+
 ## Lab Resources
 
 | Resource | What it's for | Where |
@@ -31,6 +38,8 @@ docs/04-lab2-vuln-remediation.md        Lab 2 manual: SQL injection + fix + regr
 docs/05-comparison-exercise.md          optional: AI with skill vs. without skill
 docs/06-offline-readiness-checklist.md  run this with the network OFF before lab day
 docs/07-ollama-windows-troubleshooting.md  Ollama won't start / port 11434 issues on Windows
+docs/08-fresh-pc-setup.md               condensed checklist for a machine with nothing installed
+docs/09-quickstart-already-built.md     condensed "just start the labs" guide once already built
 docs/worksheets/                        student fill-in sheets for both labs
 docs/rubrics/                           pointer to the grading tables (inline in each manual)
 tools/skill_loader.py                   turns a Claude-Red SKILL.md into a local Ollama model

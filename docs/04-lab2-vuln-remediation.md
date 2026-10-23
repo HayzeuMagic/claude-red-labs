@@ -27,6 +27,13 @@ By the end of this lab, students will be able to:
   ```powershell
   python tools\skill_loader.py --skill ..\claude-red-skills\Skills\web\offensive-sqli\SKILL.md --name redlab-sqli --base qwen2.5-coder:7b
   ```
+  **If this fails with `error: skill file not found`**, don't assume the clone was bad —
+  confirmed on the dev PC, Windows Defender quarantined and deleted exactly this file
+  (`Backdoor:PHP/Perhetshell.A!dha`, a heuristic hit on an example payload in the methodology
+  text) sometime after a successful `git clone`. See `02-offline-installation.md` Step 4.1 for
+  how to confirm that's what happened and why this guide does not restore the file for you
+  automatically. If it's not restored, `redlab-sqli` — and this lab — stay **blocked** until
+  whoever manages the machine's security policy decides how to handle it.
 
 ## The Relevant Claude-Red Skill
 

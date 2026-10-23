@@ -15,7 +15,11 @@ Run this **after** completing `02-offline-installation.md`, with the network dis
       same thing as being offline-ready; if this fails, see
       `07-ollama-windows-troubleshooting.md`, since it can fail with or without a network).
 - [ ] `ollama list` shows your base model tag plus `redlab-idor`, `redlab-sqli`,
-      `redlab-webtriage`, `redlab-baseline`.
+      `redlab-webtriage`, `redlab-baseline`. If `redlab-sqli` is missing because
+      `claude-red-skills\Skills\web\offensive-sqli\SKILL.md` keeps disappearing, check for a
+      Windows Defender quarantine of that specific file before re-cloning again — see
+      `02-offline-installation.md` Step 4.1. Treat Lab 2's AI step as **blocked**, not failed,
+      until that's resolved; Lab 1 does not depend on it.
 - [ ] `ollama run redlab-idor "what's an IDOR in one sentence?"` responds with no error.
 - [ ] `docker compose up -d` (from the `claude-red-labs` root) brings up Juice Shop using the
       **already-pulled** image — `docker compose ps` shows it running, and

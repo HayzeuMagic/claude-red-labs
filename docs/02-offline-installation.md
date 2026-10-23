@@ -206,6 +206,29 @@ Get-ChildItem claude-red-skills\Skills
 ```
 You should see category folders (`web`, `auth`, `wireless`, `utility`, ...).
 
+> **Note — antivirus can delete a skill file after the clone succeeds:** confirmed on the dev
+> PC on 2026-10-23, Windows Defender quarantined and deleted
+> `Skills\web\offensive-sqli\SKILL.md` **after** the clone finished successfully — Defender's
+> real-time scanner flagged it as `Backdoor:PHP/Perhetshell.A!dha` (a heuristic match, almost
+> certainly triggered by an example payload snippet inside that methodology document, not an
+> actual backdoor) the next time something read the file. `git clone` reporting success and
+> `Get-ChildItem` immediately afterward showing the file do **not** guarantee the file is still
+> there a few minutes later. If a `SKILL.md` your lab needs goes missing after a clean clone,
+> check for exactly this before assuming the clone itself failed:
+> ```powershell
+> git -C claude-red-skills status --short
+> Get-MpThreatDetection | Select-Object ThreatID, Resources, InitialDetectionTime
+> ```
+> A local-only deletion (`git status` shows ` D <path>` against a clean upstream clone) plus a
+> matching entry in `Get-MpThreatDetection` confirms Defender, not a bad clone. **This is a
+> security-policy decision, not a bug to route around automatically** — restoring the file from
+> quarantine (`MpCmdRun.exe -Restore`) or adding a Defender exclusion for the repo both override
+> an antivirus threat verdict and need a deliberate, informed choice (and Administrator rights)
+> by whoever owns that decision for the machine; this guide does not do either for you. If the
+> file stays deleted, treat the model(s) that depend on it as **blocked** and continue with the
+> rest of the kit — `redlab-sqli` (Lab 2) is the only model this currently affects; `offensive-idor`,
+> `offensive-fast-checking`, and `offensive-reporting` were not flagged.
+
 ### 4.2 Clone (or confirm you already have) this kit
 
 **RUN IN:** Windows PowerShell — Normal User
