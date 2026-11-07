@@ -113,12 +113,15 @@ def strip_claude_specific(body: str) -> str:
 
 
 def load_skill_body(path: Path) -> str:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    # Drop YAML frontmatter if present (--- ... ---)
-    if text.startswith("---"):
-        parts = text.split("---", 2)
-        if len(parts) >= 3:
-            text = parts[2]
+    # utf-8-sig drops a BOM (common for files saved by Windows editors), which
+    # would otherwise hide the frontmatter's opening '---'.
+    text = path.read_text(encoding="utf-8-sig", errors="replace")
+    # Drop YAML frontmatter if present: '---' on its own first line, up to the
+    # next line that is exactly '---'. Splitting on every '---' substring broke
+    # on values like "description: A --- B" and cut the body short.
+    m = re.match(r"\A---[ \t]*\r?\n.*?^---[ \t]*(?:\r?\n|\Z)", text, re.DOTALL | re.MULTILINE)
+    if m:
+        text = text[m.end():]
     return strip_claude_specific(text)
 
 
