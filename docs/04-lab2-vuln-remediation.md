@@ -150,8 +150,9 @@ correct approach if it doesn't already.
 
 ### 4.1 Run the included test suite
 
-**RUN IN:** Windows PowerShell — Normal User
-**Directory:** `claude-red-labs` root
+**RUN IN:** Windows PowerShell — Normal User, with the Lab 2 venv activated
+**Directory:** `lab2\vuln_app` (where Step 2.1 left you — `cd ..\..` takes you to the
+`claude-red-labs` root; if you're already at the root, skip that line)
 
 ```powershell
 cd ..\..
