@@ -22,7 +22,7 @@ Usage:
     python tools/skill_loader.py --skill a.md --skill b.md --name redlab-web --base qwen2.5-coder:7b
     python tools/skill_loader.py --baseline --name redlab-baseline --base qwen2.5-coder:7b
 
-Requires: Python 3.8+, and the `ollama` CLI already installed and on PATH.
+Requires: Python 3.9+ (matching the setup docs), and the `ollama` CLI already installed and on PATH.
 No network access is used by this script itself — it only reads local files and
 shells out to the already-installed, already-offline `ollama` binary.
 """
