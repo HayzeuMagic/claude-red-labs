@@ -185,8 +185,17 @@ def main():
         sys.exit(1)
 
     cmd = ["ollama", "create", args.name, "-f", str(out_path)]
-    print("Running:", " ".join(cmd))
-    subprocess.run(cmd, check=True)
+    # list2cmdline quotes paths with spaces (e.g. C:\Users\Jane Doe\...), so the
+    # printed line can be copy-pasted to rerun just this step, as the docs suggest.
+    printable = subprocess.list2cmdline(cmd)
+    print("Running:", printable)
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        print(f"\nerror: `ollama create` failed (exit code {result.returncode}).\n"
+              f"The Modelfile at {out_path} was written correctly; once the Ollama server is\n"
+              f"reachable (see docs/07-ollama-windows-troubleshooting.md), rerun only:\n"
+              f"    {printable}", file=sys.stderr)
+        sys.exit(result.returncode)
     print(f"\nDone. Try it with:\n    ollama run {args.name}")
 
 
