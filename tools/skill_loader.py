@@ -149,6 +149,9 @@ def main():
 
     if not args.baseline and not args.skill:
         ap.error("pass at least one --skill <path>, or use --baseline")
+    if args.baseline and args.skill:
+        # A "baseline" with skill content silently invalidates the comparison exercise.
+        ap.error("--baseline builds a model with NO skill content; don't combine it with --skill")
 
     chunks = [SAFETY_BANNER]
     for s in args.skill:
