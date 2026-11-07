@@ -172,6 +172,7 @@ def main():
     modelfile_text = build_modelfile(args.base, system_text)
 
     out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(modelfile_text, encoding="utf-8")
     print(f"Wrote {out_path} ({len(modelfile_text)} bytes, base={args.base})")
 
