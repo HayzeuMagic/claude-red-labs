@@ -100,7 +100,7 @@ curl.exe "http://127.0.0.1:5000/user?username=alice"
 `Invoke-WebRequest`, which renders the response differently than real curl. `curl.exe`
 bypasses the alias. In Command Prompt, plain `curl` is already the real binary.)
 
-Expected: a single JSON object for `alice`.
+Expected: a JSON array containing exactly one object, for `alice`.
 
 ### 2.3 Send the injection attempt
 
