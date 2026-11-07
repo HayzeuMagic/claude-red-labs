@@ -51,7 +51,6 @@ on localhost inside the lab (e.g. OWASP Juice Shop, or the lab2 sample Flask app
 STRIP_LINE_PATTERNS = [
     r"^Trigger Phrases.*$",
     r"^Use this skill when.*conversation involves.*$",
-    r"^\s*`[^`]*,.*,.*`\s*$",  # the comma-separated trigger-phrase line under "Trigger Phrases"
     r".*auto-loads? based on conversational triggers.*",
     r".*~/\.claude/skills.*",
     r".*Claude Skills system.*",
@@ -60,6 +59,10 @@ STRIP_SECTION_HEADERS = [
     "trigger phrases",
     "instructions for claude",
 ]
+# The comma-separated phrase list that follows a "Trigger Phrases" line. Only
+# stripped directly after that line: elsewhere, an inline-code line with commas
+# is usually real methodology (e.g. `id, user_id, account_id`).
+TRIGGER_LIST_PATTERN = r"^\s*`[^`]*,.*,.*`\s*$"
 
 
 def strip_claude_specific(body: str) -> str:
@@ -67,6 +70,7 @@ def strip_claude_specific(body: str) -> str:
     out = []
     skip_level = 0  # header level of the section being stripped; 0 = not skipping
     in_fence = False
+    after_trigger_line = False
     for line in lines:
         if re.match(r"^\s*(```|~~~)", line):
             in_fence = not in_fence
@@ -92,6 +96,14 @@ def strip_claude_specific(body: str) -> str:
         if skip_level:
             # Only a header of the same or higher level ends the skip; handled above.
             continue
+        if after_trigger_line:
+            if not line.strip():
+                continue  # blank line between "Trigger Phrases" and its list
+            after_trigger_line = False
+            if re.match(TRIGGER_LIST_PATTERN, line.strip()):
+                continue
+        if re.match(r"^Trigger Phrases", line.strip(), re.IGNORECASE):
+            after_trigger_line = True
         if any(re.match(p, line.strip(), re.IGNORECASE) for p in STRIP_LINE_PATTERNS):
             continue
         out.append(line)
