@@ -9,7 +9,9 @@
 # Bound to 127.0.0.1 only — not reachable from other machines on the network.
 services:
   juice-shop:
-    image: bkimminich/juice-shop
+    # Pinned so every lab PC runs the same challenges and a re-pull can't silently
+    # change behaviour between class sessions. Bump deliberately, then re-test Lab 1.
+    image: bkimminich/juice-shop:v20.3.0
     container_name: redlab-juiceshop
     ports:
       - "127.0.0.1:3000:3000"
