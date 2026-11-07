@@ -74,4 +74,7 @@ def get_user():
 
 if __name__ == "__main__":
     init_db()
-    app.run(host="127.0.0.1", port=5001, debug=True)
+    # debug=False: the Werkzeug debugger shows full tracebacks (an info leak) and
+    # offers an interactive Python console, so the "fixed" reference app must not
+    # ship with it on, even bound to localhost.
+    app.run(host="127.0.0.1", port=5001, debug=False)
