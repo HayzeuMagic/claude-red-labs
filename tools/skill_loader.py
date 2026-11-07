@@ -65,16 +65,20 @@ STRIP_SECTION_HEADERS = [
 def strip_claude_specific(body: str) -> str:
     lines = body.splitlines()
     out = []
-    skipping_section = False
+    skip_level = 0  # header level of the section being stripped; 0 = not skipping
     for line in lines:
-        header_match = re.match(r"^#{1,3}\s+(.+)$", line.strip())
+        header_match = re.match(r"^(#{1,6})\s+(.+)$", line.strip())
         if header_match:
-            title = header_match.group(1).strip().lower()
-            skipping_section = title in STRIP_SECTION_HEADERS
-            if skipping_section:
+            level = len(header_match.group(1))
+            if skip_level and level > skip_level:
+                # A sub-heading inside a stripped section is stripped with it.
                 continue
-        if skipping_section:
-            # A new header of the same or higher level ends the skip; handled above.
+            title = header_match.group(2).strip().lower()
+            skip_level = level if title in STRIP_SECTION_HEADERS else 0
+            if skip_level:
+                continue
+        if skip_level:
+            # Only a header of the same or higher level ends the skip; handled above.
             continue
         if any(re.match(p, line.strip(), re.IGNORECASE) for p in STRIP_LINE_PATTERNS):
             continue
