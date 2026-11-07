@@ -88,5 +88,26 @@ def test_fixed_app_normal_lookup_still_works():
 def test_fixed_app_does_not_leak_admin_for_unrelated_query():
     client = _make_client("app_fixed")
     resp = client.get("/user", query_string={"username": "bob" + INJECTION_PAYLOAD})
+    assert resp.status_code == 200
     data = resp.get_json()
     assert data == []
+
+
+def test_fixed_app_database_errors_are_generic():
+    """app_fixed.py also claims to fix app.py's secondary finding: reflecting the
+    raw SQL text and sqlite error back to the client. Force a database error (the
+    table is gone) and check that neither leaks."""
+    import sqlite3
+
+    mod = importlib.import_module("app_fixed")
+    client = _make_client("app_fixed")
+    conn = sqlite3.connect(mod.DB_PATH)
+    conn.execute("DROP TABLE users")
+    conn.commit()
+    conn.close()
+
+    resp = client.get("/user", query_string={"username": "alice"})
+    assert resp.status_code == 500
+    body = resp.get_data(as_text=True)
+    assert resp.get_json() == {"error": "internal error"}
+    assert "SELECT" not in body and "no such table" not in body
