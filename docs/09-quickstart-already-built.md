@@ -98,9 +98,10 @@ Invoke-WebRequest http://127.0.0.1:5000/ -UseBasicParsing
 ```
 
 To run the regression tests at any point (from a **third** terminal, or after stopping the
-app with `Ctrl+C` in the first one):
+app with `Ctrl+C` in the first one). In a new terminal, first `cd` into `lab2\vuln_app` and
+run the `Activate.ps1` line above (otherwise: `ModuleNotFoundError: flask`), then:
 ```powershell
-cd C:\Users\Administrator\claude-red-labs
+cd ..\..
 pytest lab2\tests\test_security_regression.py -v
 ```
 Expected: `5 passed` (`6 passed` once a student has added their own test, per the Lab 2
