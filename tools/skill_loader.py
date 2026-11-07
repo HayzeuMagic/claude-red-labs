@@ -154,11 +154,18 @@ def main():
         ap.error("--baseline builds a model with NO skill content; don't combine it with --skill")
 
     chunks = [SAFETY_BANNER]
+    seen = set()
     for s in args.skill:
         p = Path(s)
         if not p.is_file():
             print(f"error: skill file not found: {p}", file=sys.stderr)
             sys.exit(1)
+        key = p.resolve()
+        if key in seen:
+            # Loading the same skill twice only burns the small models' context window.
+            print(f"note: skipping duplicate --skill {p}", file=sys.stderr)
+            continue
+        seen.add(key)
         chunks.append(f"## Skill: {p.parent.name}\n\n{load_skill_body(p)}")
 
     system_text = "\n\n---\n\n".join(chunks)
