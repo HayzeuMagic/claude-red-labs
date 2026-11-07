@@ -94,7 +94,12 @@ def load_skill_body(path: Path) -> str:
 
 def build_modelfile(base_model: str, system_text: str) -> str:
     # Triple-quoted SYSTEM block per Ollama Modelfile syntax.
-    escaped = system_text.replace('"""', '\\"\\"\\"')
+    # Ollama's parser does no backslash-escape processing: a block simply ends at
+    # the first `"""`, and `\"` stays a literal backslash + quote in the prompt.
+    # So the only safe option is to make sure no `"""` run survives in the body.
+    escaped = system_text
+    while '"""' in escaped:
+        escaped = escaped.replace('"""', "'''")
     return f'FROM {base_model}\nSYSTEM """\n{escaped}\n"""\n'
 
 
