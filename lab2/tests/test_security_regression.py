@@ -45,7 +45,7 @@ def test_vulnerable_app_leaks_all_users_via_injection():
     unauthenticated request for a single named user. This test is expected to
     FAIL once you point it at app_fixed instead — that's the point."""
     client = _make_client("app")
-    resp = client.get(f"/user?username={INJECTION_PAYLOAD}")
+    resp = client.get("/user", query_string={"username": INJECTION_PAYLOAD})
     assert resp.status_code == 200
     data = resp.get_json()
     usernames = {row["username"] for row in data}
@@ -58,7 +58,7 @@ def test_vulnerable_app_leaks_all_users_via_injection():
 
 def test_normal_lookup_still_works_on_vulnerable_app():
     client = _make_client("app")
-    resp = client.get("/user?username=alice")
+    resp = client.get("/user", query_string={"username": "alice"})
     data = resp.get_json()
     assert len(data) == 1
     assert data[0]["username"] == "alice"
@@ -69,7 +69,7 @@ def test_fixed_app_blocks_the_same_injection():
     every user against app.py must return ZERO rows against app_fixed.py,
     because no username actually equals the literal injection string."""
     client = _make_client("app_fixed")
-    resp = client.get(f"/user?username={INJECTION_PAYLOAD}")
+    resp = client.get("/user", query_string={"username": INJECTION_PAYLOAD})
     assert resp.status_code == 200
     data = resp.get_json()
     assert data == [], f"fix did not hold -- injection payload returned rows: {data}"
@@ -78,7 +78,7 @@ def test_fixed_app_blocks_the_same_injection():
 def test_fixed_app_normal_lookup_still_works():
     """The fix must not break legitimate use."""
     client = _make_client("app_fixed")
-    resp = client.get("/user?username=alice")
+    resp = client.get("/user", query_string={"username": "alice"})
     data = resp.get_json()
     assert len(data) == 1
     assert data[0]["username"] == "alice"
@@ -87,6 +87,6 @@ def test_fixed_app_normal_lookup_still_works():
 
 def test_fixed_app_does_not_leak_admin_for_unrelated_query():
     client = _make_client("app_fixed")
-    resp = client.get(f"/user?username=bob{INJECTION_PAYLOAD}")
+    resp = client.get("/user", query_string={"username": "bob" + INJECTION_PAYLOAD})
     data = resp.get_json()
     assert data == []
