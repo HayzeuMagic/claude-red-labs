@@ -22,6 +22,17 @@ sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "vuln_app"))
 INJECTION_PAYLOAD = "' OR '1'='1"
 
 
+@pytest.fixture(autouse=True)
+def _isolated_db(tmp_path, monkeypatch):
+    """Point both apps at a throwaway database for each test. init_db() drops and
+    recreates the users table, so without this, running the tests while app.py is
+    up for the lab would silently reset the live app's data (and leave lab.db /
+    lab_fixed.db files behind in the source tree)."""
+    for name in ("app", "app_fixed"):
+        mod = importlib.import_module(name)
+        monkeypatch.setattr(mod, "DB_PATH", tmp_path / f"{name}.db")
+
+
 def _make_client(module_name):
     mod = importlib.import_module(module_name)
     mod.init_db()
