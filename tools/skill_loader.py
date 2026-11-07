@@ -89,7 +89,9 @@ def strip_claude_specific(body: str) -> str:
             if skip_level and level > skip_level:
                 # A sub-heading inside a stripped section is stripped with it.
                 continue
-            title = header_match.group(2).strip().lower()
+            # Normalise "**Trigger Phrases:**", "Instructions for Claude #" etc.
+            title = re.sub(r"[^a-z0-9 ]+", " ", header_match.group(2).lower())
+            title = " ".join(title.split())
             skip_level = level if title in STRIP_SECTION_HEADERS else 0
             if skip_level:
                 continue
