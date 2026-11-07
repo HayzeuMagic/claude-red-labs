@@ -66,7 +66,19 @@ def strip_claude_specific(body: str) -> str:
     lines = body.splitlines()
     out = []
     skip_level = 0  # header level of the section being stripped; 0 = not skipping
+    in_fence = False
     for line in lines:
+        if re.match(r"^\s*(```|~~~)", line):
+            in_fence = not in_fence
+            if not skip_level:
+                out.append(line)
+            continue
+        if in_fence:
+            # Code samples are kept verbatim: a `# comment` in a shell snippet is
+            # not a Markdown heading, and strip patterns must not touch payloads.
+            if not skip_level:
+                out.append(line)
+            continue
         header_match = re.match(r"^(#{1,6})\s+(.+)$", line.strip())
         if header_match:
             level = len(header_match.group(1))
