@@ -13,4 +13,7 @@ services:
     container_name: redlab-juiceshop
     ports:
       - "127.0.0.1:3000:3000"
-    restart: unless-stopped
+    # Never auto-start: this is a deliberately vulnerable app. With unless-stopped it
+    # came back on every reboot / Docker Desktop start if a session ended without
+    # `docker compose down`. Start it explicitly for each lab session instead.
+    restart: "no"
