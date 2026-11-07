@@ -33,11 +33,14 @@ Both apps bind to `127.0.0.1` only. Stop with `Ctrl+C`.
 
 ```powershell
 curl.exe "http://127.0.0.1:5000/user?username=alice"
-curl.exe "http://127.0.0.1:5000/user?username=' OR '1'='1"
+curl.exe -G "http://127.0.0.1:5000/user" --data-urlencode "username=' OR '1'='1"
 ```
 Use `curl.exe` explicitly, not bare `curl` — in PowerShell, plain `curl` is an alias for
 `Invoke-WebRequest`, which behaves differently from real curl. In Command Prompt, plain
 `curl` is already the real binary.
+
+The injection payload must go through `--data-urlencode`: pasted raw into the URL, its
+spaces make the URL malformed and curl refuses to send the request.
 
 The second request returns every user (including `admin`) from the vulnerable app, and an
 empty list from the fixed app on port 5001.

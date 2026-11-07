@@ -107,8 +107,11 @@ Expected: a single JSON object for `alice`.
 **RUN IN:** Windows PowerShell — Normal User, same second terminal
 
 ```powershell
-curl.exe "http://127.0.0.1:5000/user?username=' OR '1'='1"
+curl.exe -G "http://127.0.0.1:5000/user" --data-urlencode "username=' OR '1'='1"
 ```
+(`-G --data-urlencode` makes curl URL-encode the payload for you. Pasting it raw into the
+URL does **not** work: the spaces make it a malformed URL and curl refuses to send it at all,
+which looks like the app is down rather than like a refuted hypothesis.)
 Expected, if the model's hypothesis is correct: **every** user, including `admin` — more
 data than a lookup for one named user should ever return. No data is modified or deleted;
 this only demonstrates that a `SELECT` boundary can be bypassed.
