@@ -203,7 +203,7 @@ Expected: `* Running on http://127.0.0.1:5000`. In a second terminal:
 cd ..\..
 pytest lab2\tests\test_security_regression.py -v
 ```
-Expected: `5 passed`.
+Expected: `6 passed`.
 
 Full detail: `02-offline-installation.md` Step 8.
 

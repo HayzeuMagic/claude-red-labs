@@ -22,7 +22,7 @@ Usage:
     python tools/skill_loader.py --skill a.md --skill b.md --name redlab-web --base qwen2.5-coder:7b
     python tools/skill_loader.py --baseline --name redlab-baseline --base qwen2.5-coder:7b
 
-Requires: Python 3.8+, and the `ollama` CLI already installed and on PATH.
+Requires: Python 3.9+ (matching the setup docs), and the `ollama` CLI already installed and on PATH.
 No network access is used by this script itself — it only reads local files and
 shells out to the already-installed, already-offline `ollama` binary.
 """
@@ -51,7 +51,6 @@ on localhost inside the lab (e.g. OWASP Juice Shop, or the lab2 sample Flask app
 STRIP_LINE_PATTERNS = [
     r"^Trigger Phrases.*$",
     r"^Use this skill when.*conversation involves.*$",
-    r"^\s*`[^`]*,.*,.*`\s*$",  # the comma-separated trigger-phrase line under "Trigger Phrases"
     r".*auto-loads? based on conversational triggers.*",
     r".*~/\.claude/skills.*",
     r".*Claude Skills system.*",
@@ -60,22 +59,53 @@ STRIP_SECTION_HEADERS = [
     "trigger phrases",
     "instructions for claude",
 ]
+# The comma-separated phrase list that follows a "Trigger Phrases" line. Only
+# stripped directly after that line: elsewhere, an inline-code line with commas
+# is usually real methodology (e.g. `id, user_id, account_id`).
+TRIGGER_LIST_PATTERN = r"^\s*`[^`]*,.*,.*`\s*$"
 
 
 def strip_claude_specific(body: str) -> str:
     lines = body.splitlines()
     out = []
-    skipping_section = False
+    skip_level = 0  # header level of the section being stripped; 0 = not skipping
+    in_fence = False
+    after_trigger_line = False
     for line in lines:
-        header_match = re.match(r"^#{1,3}\s+(.+)$", line.strip())
-        if header_match:
-            title = header_match.group(1).strip().lower()
-            skipping_section = title in STRIP_SECTION_HEADERS
-            if skipping_section:
-                continue
-        if skipping_section:
-            # A new header of the same or higher level ends the skip; handled above.
+        if re.match(r"^\s*(```|~~~)", line):
+            in_fence = not in_fence
+            if not skip_level:
+                out.append(line)
             continue
+        if in_fence:
+            # Code samples are kept verbatim: a `# comment` in a shell snippet is
+            # not a Markdown heading, and strip patterns must not touch payloads.
+            if not skip_level:
+                out.append(line)
+            continue
+        header_match = re.match(r"^(#{1,6})\s+(.+)$", line.strip())
+        if header_match:
+            level = len(header_match.group(1))
+            if skip_level and level > skip_level:
+                # A sub-heading inside a stripped section is stripped with it.
+                continue
+            # Normalise "**Trigger Phrases:**", "Instructions for Claude #" etc.
+            title = re.sub(r"[^a-z0-9 ]+", " ", header_match.group(2).lower())
+            title = " ".join(title.split())
+            skip_level = level if title in STRIP_SECTION_HEADERS else 0
+            if skip_level:
+                continue
+        if skip_level:
+            # Only a header of the same or higher level ends the skip; handled above.
+            continue
+        if after_trigger_line:
+            if not line.strip():
+                continue  # blank line between "Trigger Phrases" and its list
+            after_trigger_line = False
+            if re.match(TRIGGER_LIST_PATTERN, line.strip()):
+                continue
+        if re.match(r"^Trigger Phrases", line.strip(), re.IGNORECASE):
+            after_trigger_line = True
         if any(re.match(p, line.strip(), re.IGNORECASE) for p in STRIP_LINE_PATTERNS):
             continue
         out.append(line)
@@ -83,18 +113,26 @@ def strip_claude_specific(body: str) -> str:
 
 
 def load_skill_body(path: Path) -> str:
-    text = path.read_text(encoding="utf-8", errors="replace")
-    # Drop YAML frontmatter if present (--- ... ---)
-    if text.startswith("---"):
-        parts = text.split("---", 2)
-        if len(parts) >= 3:
-            text = parts[2]
+    # utf-8-sig drops a BOM (common for files saved by Windows editors), which
+    # would otherwise hide the frontmatter's opening '---'.
+    text = path.read_text(encoding="utf-8-sig", errors="replace")
+    # Drop YAML frontmatter if present: '---' on its own first line, up to the
+    # next line that is exactly '---'. Splitting on every '---' substring broke
+    # on values like "description: A --- B" and cut the body short.
+    m = re.match(r"\A---[ \t]*\r?\n.*?^---[ \t]*(?:\r?\n|\Z)", text, re.DOTALL | re.MULTILINE)
+    if m:
+        text = text[m.end():]
     return strip_claude_specific(text)
 
 
 def build_modelfile(base_model: str, system_text: str) -> str:
     # Triple-quoted SYSTEM block per Ollama Modelfile syntax.
-    escaped = system_text.replace('"""', '\\"\\"\\"')
+    # Ollama's parser does no backslash-escape processing: a block simply ends at
+    # the first `"""`, and `\"` stays a literal backslash + quote in the prompt.
+    # So the only safe option is to make sure no `"""` run survives in the body.
+    escaped = system_text
+    while '"""' in escaped:
+        escaped = escaped.replace('"""', "'''")
     return f'FROM {base_model}\nSYSTEM """\n{escaped}\n"""\n'
 
 
@@ -111,19 +149,30 @@ def main():
 
     if not args.baseline and not args.skill:
         ap.error("pass at least one --skill <path>, or use --baseline")
+    if args.baseline and args.skill:
+        # A "baseline" with skill content silently invalidates the comparison exercise.
+        ap.error("--baseline builds a model with NO skill content; don't combine it with --skill")
 
     chunks = [SAFETY_BANNER]
+    seen = set()
     for s in args.skill:
         p = Path(s)
         if not p.is_file():
             print(f"error: skill file not found: {p}", file=sys.stderr)
             sys.exit(1)
+        key = p.resolve()
+        if key in seen:
+            # Loading the same skill twice only burns the small models' context window.
+            print(f"note: skipping duplicate --skill {p}", file=sys.stderr)
+            continue
+        seen.add(key)
         chunks.append(f"## Skill: {p.parent.name}\n\n{load_skill_body(p)}")
 
     system_text = "\n\n---\n\n".join(chunks)
     modelfile_text = build_modelfile(args.base, system_text)
 
     out_path = Path(args.out)
+    out_path.parent.mkdir(parents=True, exist_ok=True)
     out_path.write_text(modelfile_text, encoding="utf-8")
     print(f"Wrote {out_path} ({len(modelfile_text)} bytes, base={args.base})")
 
@@ -136,8 +185,17 @@ def main():
         sys.exit(1)
 
     cmd = ["ollama", "create", args.name, "-f", str(out_path)]
-    print("Running:", " ".join(cmd))
-    subprocess.run(cmd, check=True)
+    # list2cmdline quotes paths with spaces (e.g. C:\Users\Jane Doe\...), so the
+    # printed line can be copy-pasted to rerun just this step, as the docs suggest.
+    printable = subprocess.list2cmdline(cmd)
+    print("Running:", printable)
+    result = subprocess.run(cmd)
+    if result.returncode != 0:
+        print(f"\nerror: `ollama create` failed (exit code {result.returncode}).\n"
+              f"The Modelfile at {out_path} was written correctly; once the Ollama server is\n"
+              f"reachable (see docs/07-ollama-windows-troubleshooting.md), rerun only:\n"
+              f"    {printable}", file=sys.stderr)
+        sys.exit(result.returncode)
     print(f"\nDone. Try it with:\n    ollama run {args.name}")
 
 

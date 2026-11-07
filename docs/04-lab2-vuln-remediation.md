@@ -100,15 +100,18 @@ curl.exe "http://127.0.0.1:5000/user?username=alice"
 `Invoke-WebRequest`, which renders the response differently than real curl. `curl.exe`
 bypasses the alias. In Command Prompt, plain `curl` is already the real binary.)
 
-Expected: a single JSON object for `alice`.
+Expected: a JSON array containing exactly one object, for `alice`.
 
 ### 2.3 Send the injection attempt
 
 **RUN IN:** Windows PowerShell — Normal User, same second terminal
 
 ```powershell
-curl.exe "http://127.0.0.1:5000/user?username=' OR '1'='1"
+curl.exe -G "http://127.0.0.1:5000/user" --data-urlencode "username=' OR '1'='1"
 ```
+(`-G --data-urlencode` makes curl URL-encode the payload for you. Pasting it raw into the
+URL does **not** work: the spaces make it a malformed URL and curl refuses to send it at all,
+which looks like the app is down rather than like a refuted hypothesis.)
 Expected, if the model's hypothesis is correct: **every** user, including `admin` — more
 data than a lookup for one named user should ever return. No data is modified or deleted;
 this only demonstrates that a `SELECT` boundary can be bypassed.
@@ -147,14 +150,15 @@ correct approach if it doesn't already.
 
 ### 4.1 Run the included test suite
 
-**RUN IN:** Windows PowerShell — Normal User
-**Directory:** `claude-red-labs` root
+**RUN IN:** Windows PowerShell — Normal User, with the Lab 2 venv activated
+**Directory:** `lab2\vuln_app` (where Step 2.1 left you — `cd ..\..` takes you to the
+`claude-red-labs` root; if you're already at the root, skip that line)
 
 ```powershell
 cd ..\..
 pytest lab2\tests\test_security_regression.py -v
 ```
-Expected: `5 passed`.
+Expected: `6 passed`.
 
 ### 4.2 Read what each test proves
 
@@ -162,6 +166,8 @@ Expected: `5 passed`.
 - `test_fixed_app_blocks_the_same_injection` — the actual regression test: the same payload
   must return zero rows against `app_fixed.py`.
 - `test_fixed_app_normal_lookup_still_works` — the fix must not break legitimate use.
+- `test_fixed_app_database_errors_are_generic` — the fix also stops reflecting raw SQL and
+  database error text back to the client (the secondary info-leak finding in `app.py`).
 
 ### 4.3 Write one additional test of your own
 
@@ -177,7 +183,7 @@ proves you understand the fix**, not just that you can run an existing test file
 ```powershell
 pytest lab2\tests\test_security_regression.py -v
 ```
-Expected: `6 passed`, including your new test.
+Expected: `7 passed`, including your new test.
 
 ---
 
@@ -187,8 +193,8 @@ Expected: `6 passed`, including your new test.
   named only one username.
 - `app_fixed.py` with the same payload: returns `[]` (no user literally named
   `' OR '1'='1`).
-- `pytest lab2/tests/test_security_regression.py -v`: 5/5 passing against the apps as shipped
-  in this kit (verified while building this guide); 6/6 once you've added your own test.
+- `pytest lab2/tests/test_security_regression.py -v`: 6/6 passing against the apps as shipped
+  in this kit (verified while building this guide); 7/7 once you've added your own test.
 
 ## Troubleshooting
 
