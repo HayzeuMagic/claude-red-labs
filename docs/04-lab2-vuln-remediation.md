@@ -158,7 +158,7 @@ correct approach if it doesn't already.
 cd ..\..
 pytest lab2\tests\test_security_regression.py -v
 ```
-Expected: `5 passed`.
+Expected: `6 passed`.
 
 ### 4.2 Read what each test proves
 
@@ -166,6 +166,8 @@ Expected: `5 passed`.
 - `test_fixed_app_blocks_the_same_injection` — the actual regression test: the same payload
   must return zero rows against `app_fixed.py`.
 - `test_fixed_app_normal_lookup_still_works` — the fix must not break legitimate use.
+- `test_fixed_app_database_errors_are_generic` — the fix also stops reflecting raw SQL and
+  database error text back to the client (the secondary info-leak finding in `app.py`).
 
 ### 4.3 Write one additional test of your own
 
@@ -181,7 +183,7 @@ proves you understand the fix**, not just that you can run an existing test file
 ```powershell
 pytest lab2\tests\test_security_regression.py -v
 ```
-Expected: `6 passed`, including your new test.
+Expected: `7 passed`, including your new test.
 
 ---
 
@@ -191,8 +193,8 @@ Expected: `6 passed`, including your new test.
   named only one username.
 - `app_fixed.py` with the same payload: returns `[]` (no user literally named
   `' OR '1'='1`).
-- `pytest lab2/tests/test_security_regression.py -v`: 5/5 passing against the apps as shipped
-  in this kit (verified while building this guide); 6/6 once you've added your own test.
+- `pytest lab2/tests/test_security_regression.py -v`: 6/6 passing against the apps as shipped
+  in this kit (verified while building this guide); 7/7 once you've added your own test.
 
 ## Troubleshooting
 

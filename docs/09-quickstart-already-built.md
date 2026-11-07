@@ -104,7 +104,7 @@ run the `Activate.ps1` line above (otherwise: `ModuleNotFoundError: flask`), the
 cd ..\..
 pytest lab2\tests\test_security_regression.py -v
 ```
-Expected: `5 passed` (`6 passed` once a student has added their own test, per the Lab 2
+Expected: `6 passed` (`7 passed` once a student has added their own test, per the Lab 2
 manual).
 
 **If `ModuleNotFoundError: flask`:** the venv isn't active in that terminal — redo the

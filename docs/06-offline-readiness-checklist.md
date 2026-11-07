@@ -27,7 +27,7 @@ Run this **after** completing `02-offline-installation.md`, with the network dis
 - [ ] From `lab2\vuln_app`, with the venv activated (`.venv\Scripts\Activate.ps1`):
       `python app.py` starts without error (venv already created and dependencies already
       installed from the online step).
-- [ ] From the repo root: `pytest lab2\tests\test_security_regression.py -v` passes 5/5,
+- [ ] From the repo root: `pytest lab2\tests\test_security_regression.py -v` passes 6/6,
       offline.
 - [ ] (If using ZAP) ZAP launches and can proxy a request to `127.0.0.1:3000` without trying
       to reach its update server (decline any update prompt).

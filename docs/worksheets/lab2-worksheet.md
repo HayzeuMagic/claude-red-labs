@@ -52,7 +52,7 @@ Your added test function:
 
 ```
 
-`pytest` output (should show 6/6 passing including your test):
+`pytest` output (should show 7/7 passing including your test):
 
 ```
 [paste]
